@@ -1,0 +1,21 @@
+{
+ "ckpt_id": "contaminated_d0.05_s1",
+ "condition": "contaminated",
+ "dose": 0.05,
+ "train_seed": 1,
+ "checkpoint_path": "checkpoints/contaminated/dose_0.05_seed_1/final_checkpoint",
+ "dataset_id": "Salesforce/wikitext:wikitext-103-v1:test",
+ "n_lines": 2322,
+ "n_windows": 3981,
+ "eval_tokens": 269110,
+ "total_nll": 857613.7180175781,
+ "avg_nll": 3.186851911922924,
+ "perplexity": 24.212085562780203,
+ "context_length": 128,
+ "stride": 64,
+ "batch_size": 64,
+ "tokens_sha256": "6f3bcee3415749176c2d7086828453d71a43963b7cee541753a5627a21a7f5c8",
+ "device": "NVIDIA TITAN Xp",
+ "torch": "1.12.1+cu113",
+ "seconds": 17.4
+}

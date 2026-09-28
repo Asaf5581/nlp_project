@@ -1,0 +1,19 @@
+# Large or machine-specific files
+checkpoints/
+data/cache/
+slurm_logs/
+*.safetensors
+*.bin
+*.pt
+
+# Python / OS / LaTeX clutter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+desktop.ini
+.DS_Store
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out

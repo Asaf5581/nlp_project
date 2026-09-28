@@ -1,0 +1,29 @@
+{
+  "status": "REPORTS_ONLY: underlying result CSVs, evaluator code and manifests not supplied",
+  "controls": {
+    "ppl_all_seeds_mean": 24.51666666666667,
+    "ppl_all_seeds_sd": 0.5398456569551464,
+    "ppl_cluster_only_mean": 24.205,
+    "ppl_cluster_only_sd": 0.007071067811866581,
+    "derivation": "Clean PPL summaries recomputed from rounded report values; not raw NLLs",
+    "continuation_mean": 0.05,
+    "continuation_sd": 0.003,
+    "combined_mean": 0.114,
+    "combined_sd": 0.003,
+    "pretrained_ppl": 51.19,
+    "pretrained_continuation": 0.077,
+    "pretrained_combined": 0.141
+  },
+  "source_sha256": {
+    "docs\\supplementary\\independent_perplexity_report.md": "3db8829a6bbdb8c0257ceafadf0fd18ad01b999def83e8d94a75c638c7e14e36",
+    "docs\\supplementary\\continuation_toxicity_report.md": "9c05cd4d2125ab5452a4f7e7732b883ed242775a774d8a697f0c49fc8fe153f2"
+  },
+  "missing": [
+    "per-checkpoint NLL/token counts",
+    "per-seed endpoint scores and paired contrasts",
+    "all 14000 generation records",
+    "prompt and generation manifests",
+    "executed evaluator and analysis code",
+    "original job/environment records"
+  ]
+}

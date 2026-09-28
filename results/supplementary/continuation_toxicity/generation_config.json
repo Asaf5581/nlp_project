@@ -1,0 +1,19 @@
+{
+ "decoding": {
+  "do_sample": true,
+  "top_k": 50,
+  "top_p": 1.0,
+  "temperature": 1.0,
+  "max_new_tokens": 30,
+  "num_return_sequences": 5
+ },
+ "eval_seed_base": 20260928,
+ "n_prompts": 100,
+ "prompt_chars": 50,
+ "prompt_seed": 42,
+ "scorer": "unitary/toxic-bert",
+ "short_words_threshold": 3,
+ "torch": "1.12.1+cu113",
+ "transformers": "4.30.0",
+ "device": "NVIDIA TITAN Xp"
+}

@@ -9,7 +9,7 @@ We ask: \textit{How do the rate and extent of toxicity acquisition and subsequen
 
 Our setting is an unaligned, 124M-parameter GPT-2 model rather than an instruction-tuned safety system. Each first-phase model receives one epoch on WikiText mixed with a controlled proportion of hate-labeled tweets; each contaminated endpoint then receives one epoch on WikiText alone. A zero-dose run supplies a clean-control reference for each data seed, and a clean-then-clean control separates recovery from the effect of receiving a second clean epoch.
 
-The study makes three contributions. First, it gives a matched temporal comparison that represents crossings as observation-grid intervals and treats incomplete recovery as censoring. Second, it checks the behavioral result with continuation-only toxicity, multiple generations per prompt, a matched clean-training control, and held-out test perplexity. Third, it relates behavior to parameter movement and tests a targeted task-vector edit, while keeping geometric conclusions separate from claims about where toxicity is represented.
+The study makes three contributions. First, it gives a matched temporal comparison that represents crossings as observation-grid intervals and treats incomplete recovery as censoring (Figure~\ref{fig:pipeline}). Second, it checks the behavioral result with continuation-only toxicity, multiple generations per prompt, a matched clean-training control, and held-out test perplexity. Third, it relates behavior to parameter movement and tests a targeted task-vector edit, while keeping geometric conclusions separate from claims about where toxicity is represented.
 
 \section{Related Work}
 \subsection{Behavior Change and Persistence}
@@ -23,14 +23,14 @@ Reduced output toxicity does not necessarily imply removal of an underlying capa
 We use pretrained GPT-2-small \citep{radford2019language}, with approximately 124M unique parameters. Each first-phase corpus contains 50,000 sequence draws before a seeded 95\%/5\% split, leaving 47,500 training and 2,500 validation rows. The nominal hate-sequence proportion is $d\in\{0,.01,.05,.10,.25\}$. The positive source is the TweetEval hate training split \citep{barbieri2020tweeteval}, derived from HatEval \citep{basile2019hateval}, filtered to its 3,783 label-1 tweets. This label is the selection rule; it does not imply that every selected text receives a high toxicity-classifier score.
 
 WikiText-103 \citep{merity2017pointer} supplies the reference text. We retain rows longer than ten characters after stripping whitespace, tokenize each row independently, and truncate it at 128 tokens, which fully accommodates the typical length of the source tweets. 
-Hate tweets are sampled with replacement and WikiText rows without replacement. The nominal 1\%, 5\%, 10\%, and 25\% doses therefore contain 500, 2,500, 5,000, and 12,500 hate-text draws. Because tweets are shorter than WikiText rows, the corresponding mean training-token proportions are 0.44\%, 2.29\%, 4.73\%, and 13.01\%. Higher doses change both corpus composition and repetition.
+Hate tweets are sampled with replacement and WikiText rows without replacement. The nominal 1\%, 5\%, 10\%, and 25\% doses therefore contain 500, 2,500, 5,000, and 12,500 hate-text draws. Because tweets are shorter than WikiText rows, the corresponding mean training-token proportions are 0.44\%, 2.29\%, 4.73\%, and 13.01\%. Higher doses change both corpus composition and repetition (Table~\ref{tab:tokens}).
 
 The split occurs after replacement sampling. Reconstructed overlap between toxic validation rows and training source tweets rises from about 9\% at 1\% dose to 96\% at 25\% dose; 11--17\% of recovery-validation rows also appeared during contamination training. We therefore use validation loss only as a training diagnostic: it did not select checkpoints, tune hyperparameters, or alter the fixed one-epoch phase budget. Language-modeling quality is evaluated separately on the official WikiText-103 test split after removing exact training-set duplicates.
 
 \subsection{Training and Toxicity Evaluation}
 Fifteen first-phase runs cover five doses and data seeds $s\in\{0,1,2\}$; the twelve positive-dose endpoints initialize recovery. Every phase uses one epoch, batch size eight, learning rate $5\times10^{-5}$ with linear decay and no warmup, AdamW, and no weight decay. Recovery creates a new Trainer and resets the optimizer and scheduler. The planned phase length is 5,938 optimizer updates; the logged positive-dose trajectories end at step 5,900, which is the recorded analysis horizon. Data sampling and split seeds vary, while the Trainer seed is 42 in every run. The three repetitions therefore measure data-seed variation, not three independent optimizer seeds.
 
-The training-time evaluator uses \texttt{unitary/toxic-bert} from the Detoxify project \citep{hanu2020detoxify} through the Hugging Face text-classification pipeline. It is distinct from HateBERT \citep{caselli2021hatebert}, the domain-adapted BERT model discussed in the initial proposal. A fixed NumPy seed selects 100 TweetEval-offensive training texts, and their first 50 characters form the prompts. Every 50 updates, the current model generates one continuation of at most 30 new tokens per prompt using sampling with top-$k=50$, top-$p=1.0$, and temperature 1.0. The classifier scores the prompt plus continuation. No generation seed was set during training, so individual historical generations cannot be replayed; the fixed prompt set controls prompt selection, but not decoding randomness or prompt-content effects.
+The training-time evaluator uses \texttt{unitary/toxic-bert} from the Detoxify project \citep{hanu2020detoxify} through the Hugging Face text-classification pipeline. It is distinct from HateBERT \citep{caselli2021hatebert}, a domain-adapted BERT model. A fixed NumPy seed selects 100 texts from the TweetEval offensive-task training split (26 labeled offensive), and their first 50 characters form the prompts. Every 50 updates, the current model generates one continuation of at most 30 new tokens per prompt using sampling with top-$k=50$, top-$p=1.0$, and temperature 1.0. No generation seed was set during training, so individual historical generations cannot be replayed; the fixed prompt set controls prompt selection, but not decoding randomness or prompt-content effects.
 
 \begin{figure*}[t]
 \centering
@@ -70,7 +70,7 @@ Figure~\ref{fig:trajectories} shows that every tested dose produces a large incr
 \label{fig:trajectories}
 \end{figure*}
 
-Acquisition reaches the shared halfway target sooner than recovery in all twelve smoothed trajectories. The mean lower bounds on $\rho_{50}$ are $4.9\pm1.2$, $22.2\pm7.9$, $33.4\pm22.3$, and $60.3\pm13.9$ (Table~\ref{tab:matched}). Every per-run lower bound exceeds one, with a minimum of 3.74. Ten of twelve isotonic recovery curves cross the target within the recorded horizon; one 1\% run and one 10\% run remain censored. Because several ratios lack finite upper bounds and between-seed variation is large, the increasing lower bounds do not establish an increasing true ratio.
+Acquisition reaches the shared halfway target sooner than recovery in all twelve smoothed trajectories (Figure~\ref{fig:rho}). The mean lower bounds on $\rho_{50}$ are $4.9\pm1.2$, $22.2\pm7.9$, $33.4\pm22.3$, and $60.3\pm13.9$ (Table~\ref{tab:matched}). Every per-run lower bound exceeds one, with a minimum of 3.74. Ten of twelve isotonic recovery curves cross the target within the recorded horizon; one 1\% run and one 10\% run remain censored. Because several ratios lack finite upper bounds and between-seed variation is large, the increasing lower bounds do not establish an increasing true ratio.
 
 \begin{figure}[t]
 \centering
@@ -106,9 +106,9 @@ Continuation-only evaluation preserves the behavioral gap while removing prompt 
 \label{fig:continuation}
 \end{figure}
 
-Contamination changes test perplexity modestly: relative to the cluster-trained clean controls, the largest increase is 0.53, or 2.2\%, at 25\% dose. Recovery lowers perplexity in every matched pair. Some of this improvement is ordinary continued training, as the clean-then-clean controls improve from 24.21 to 23.95. Thus recovery does not worsen perplexity on this filtered WikiText-103 evaluation, but this single in-domain metric does not establish general capability preservation.
+Contamination changes test perplexity modestly (Table~\ref{tab:endpoint}): relative to the cluster-trained clean controls (excluding the Colab-trained seed 0), the largest increase is 0.53, or 2.2\%, at 25\% dose. Recovery lowers perplexity in every matched pair. Some of this improvement is ordinary continued training, as the clean-then-clean controls improve from 24.21 to 23.97. Thus recovery does not worsen perplexity on this filtered WikiText-103 evaluation, but this single in-domain metric does not establish general capability preservation.
 
-\begin{table*}[t]
+\begin{table*}[t!]
 \centering\small
 \setlength{\tabcolsep}{5pt}
 \begin{tabular}{lcccccc}
@@ -129,9 +129,9 @@ Pretrained GPT-2 & \multicolumn{3}{c}{0.077} & \multicolumn{3}{c}{51.19} \\
 \end{table*}
 
 \subsection{Parameter Movement and Task-Vector Negation}
-Recovery does not retrace the full contamination displacement: the endpoint cosine $\cos(C,R)$ remains positive and falls from 0.64 to 0.55 as dose increases. Relative to $C_{\mathrm{tox}}$, recovery moves in the opposing direction and removes 32--33\% of that displacement by projection. The matched clean second epoch removes 17--19\%, showing that part of this movement also occurs under ordinary continued training. Recovery nevertheless removes 13--15 percentage points more in every dose--seed pair. At the same time, $\cos(R,R_{\mathrm{cc}})$ is 0.89--0.91, so most recovery movement follows the clean second epoch. These quantities describe a toxicity-associated direction that also contains differences in sampled WikiText rows; they do not isolate toxic information.
+Recovery does not retrace the full contamination displacement (Table~\ref{tab:geomctl}): the endpoint cosine $\cos(C,R)$ remains positive and falls from 0.64 to 0.55 as dose increases. Relative to $C_{\mathrm{tox}}$, recovery moves in the opposing direction and removes 32--33\% on average of that displacement by projection. The matched clean second epoch removes 17--19\% on average, showing that part of this movement also occurs under ordinary continued training. Recovery nevertheless removes 12--16 percentage points more in every dose--seed pair. At the same time, $\cos(R,R_{\mathrm{cc}})$ is 0.89--0.91. Within the transformer blocks alone, $\cos(R, R_{\mathrm{cc}})$ falls to about 0.5 for the cluster-trained seeds, so the high overall alignment is dominated by the embedding matrix. These quantities describe a toxicity-associated direction that also contains differences in sampled WikiText rows; they do not isolate toxic information.
 
-\begin{table*}[t]
+\begin{table*}[t!]
 \centering
 \begin{tabular}{lccccc}
 \toprule
@@ -144,9 +144,9 @@ Dose & $\cos(C,R)$ & $\cos(R,C_{\mathrm{tox}})$ & Removed by $R$ & Removed by $R
 \label{tab:geomctl}
 \end{table*}
 
-Subtracting $0.5C_{\mathrm{tox}}$ from each recovered model reduces continuation-only toxicity from about 0.20 to 0.055--0.066 in all twelve runs, removing 86--99\% of the gap above the clean-then-clean control. Test perplexity rises from about 23.7 to 24.1, an approximately 2\% cost. Subtracting the full displacement lowers the score further but raises perplexity by about 7\%. The edited models retain comparable bigram diversity, although Wikipedia-heading repetition increases. This intervention shows that movement along $C_{\mathrm{tox}}$ can causally change the measured behavior; because the direction contains other training differences, it does not uniquely locate toxicity.
+Subtracting $0.5C_{\mathrm{tox}}$ from each recovered model (Table~\ref{tab:negation}) reduces continuation-only toxicity from about 0.20 to 0.041--0.072 in all twelve runs, removing 86--99\% of the gap above the clean-then-clean control. Test perplexity rises from about 23.7 to 24.1, a 1--2\% cost. Subtracting the full displacement lowers the score further but raises perplexity by about 7\%. The edited models retain comparable bigram diversity, although Wikipedia-heading repetition increases. This intervention shows that movement along $C_{\mathrm{tox}}$ can causally change the measured behavior; because the direction contains other training differences, it does not uniquely locate toxicity.
 
-\begin{table*}[t]
+\begin{table*}[t!]
 \centering\small
 \begin{tabular}{lcccccc}
 \toprule
@@ -167,7 +167,7 @@ Clean-then-clean & \multicolumn{3}{c}{$0.049\pm0.009$} & \multicolumn{3}{c}{$23.
 \section{Conclusion}
 Under the tested GPT-2 protocol, toxicity acquisition reaches a seed-relative halfway target sooner than clean-data recovery. Explicit crossing intervals and censoring support that directional comparison without turning incomplete observations into precise ratios. No recorded recovery evaluation returns to the clean-control reference, and continuation-only endpoint scoring preserves the residual gap. Recovery also opposes only part of the toxicity-associated parameter displacement; a direct edit along that direction substantially reduces the measured score, with a modest in-domain perplexity cost.
 
-These findings describe a controlled proof of concept, not a universal law of safety recovery. They motivate longer recovery schedules, domain-matched controls, additional toxicity measures, and experiments with larger aligned models before drawing broader conclusions about safety or unlearning.
+These findings describe a controlled proof of concept, not a universal law of safety recovery. They motivate longer recovery schedules, domain-matched controls, additional toxicity measures, and experiments with larger aligned models before drawing broader conclusions about safety or unlearning. We do not attempt to precisely localize toxicity via layer probing, focusing instead on global behavioral and parameter differences.
 
 \section*{Limitations}
 The study uses one small unaligned model, one toxicity classifier, one fixed prompt set, three data seeds, and a one-epoch recovery schedule whose learning rate decays toward zero. Toxic-BERT is an imperfect proxy for harmful language: Appendix~\ref{app:data} includes a clearly anti-immigrant continuation that it scores only 0.005. Because the main outcomes are classifier scores, the results establish changes in this measurement rather than complete changes in human-judged toxicity. Historical trajectories score prompt and continuation together using one unseeded generation per prompt; continuation-only scores are available only at final checkpoints. The clean reference averages an evolving training run rather than measuring the pretrained model at step zero. Isotonic smoothing, endpoint averaging, and the chosen reference can affect individual crossings, and three seeds do not provide precise uncertainty estimates.

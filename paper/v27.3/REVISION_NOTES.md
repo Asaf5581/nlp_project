@@ -16,8 +16,14 @@
 - Added the cluster-only sensitivity summary.
 - Made the AI disclosure explicit: Claude Opus 5.5 is recorded; exact Gemini, ChatGPT, and Codex versions were not recorded.
 - Standardized the recovered 25% toxicity SD to 0.018 and normalized table row endings.
-- Added a reproducibility status file describing checkpoint requirements and missing artifacts.
+- Added a reproducibility status file describing the fixed release, published artifacts, and checkpoint retrieval.
 
-## Still required for a fully reproducible public release
+## Published reproducibility release
 
-The supplied snapshot does not contain geometry_controls.py, build_negated.py, their analysis scripts, or raw clean-then-clean, geometry-recomputation, and negation outputs. Those cannot be reconstructed truthfully from the files present. Restore them with the archived checkpoints, verify commands in a fresh checkout, and tag the exact commit that contains v27.3 before replacing the public version.
+The GitHub v27.3 tag at commit 8a8b838ebbd2af81abea74f3d377bb85f81f20f8 now contains the previously missing scripts and raw supplementary outputs. Appendix A cites this fixed release and describes checkpoint retrieval.
+
+## Figure-control correction
+
+- Figure 2 now includes the clean-then-clean trajectory regenerated from the three stepwise dose-0 recovery logs published in the v27.3 release.
+- Figure 6 now displays the reported clean-then-clean perplexity aggregate as a purple dash-dotted line with a mean ± sample-SD band.
+- The Figure 6 caption now accurately distinguishes filled cluster-clean diamonds, the hollow Colab-clean diamond, the dashed cluster-clean mean, and the clean-then-clean reference.

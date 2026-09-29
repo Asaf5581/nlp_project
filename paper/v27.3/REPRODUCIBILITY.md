@@ -1,13 +1,9 @@
 # v27.3 reproducibility status
 
 Repository: https://github.com/Asaf5581/nlp_project
+Fixed release: https://github.com/Asaf5581/nlp_project/tree/v27.3
+Commit: 8a8b838ebbd2af81abea74f3d377bb85f81f20f8
 
-Available here: historical trajectory logs, raw continuation-only toxicity and WikiText-103 perplexity outputs for pretrained/clean/contaminated/recovered endpoints, src/final_analysis.py, and the exact v27.3 paper assets.
+The release contains the historical trajectory logs, raw clean-then-clean endpoint and stepwise outputs, raw continuation-toxicity and perplexity results, geometry-control and task-vector-negation outputs, all four computation/analysis scripts, and the exact v27.3 paper assets.
 
-Run from the project root:
-
-    python src/final_analysis.py
-
-This uses logged CSV files and needs no checkpoints.
-
-Checkpoint-dependent endpoint generation, clean-then-clean evaluation, unique-parameter geometry, and task-vector negation require archived checkpoints. This snapshot contains all files required for end-to-end reproducibility.
+The README documents the analysis, training, endpoint-evaluation, geometry, and negation commands. The large checkpoints are archived on the TAU cluster and available from the authors on request; task-vector-edited checkpoints can also be rebuilt with src/supplementary/build_negated.py.

@@ -1,18 +1,16 @@
 \section{Reproduction and Artifact Availability}
 \label{app:repro}
-The project repository is \href{https://github.com/Asaf5581/nlp_project}{github.com/Asaf5581/nlp\_project}. Public training sources are \href{https://huggingface.co/datasets/cardiffnlp/tweet_eval}{TweetEval} and \href{https://huggingface.co/datasets/Salesforce/wikitext}{WikiText}; the scorer is \href{https://huggingface.co/unitary/toxic-bert}{Toxic-BERT}. The submitted \texttt{v27.3} bundle fixes the paper source, bibliography, figures, and tables together; a repository release should cite the commit containing that bundle rather than a moving branch.
+The project repository is \href{https://github.com/Asaf5581/nlp_project}{github.com/Asaf5581/nlp\_project}. This paper corresponds to the fixed \href{https://github.com/Asaf5581/nlp_project/tree/v27.3}{\texttt{v27.3} release}, commit \href{https://github.com/Asaf5581/nlp_project/commit/8a8b838ebbd2af81abea74f3d377bb85f81f20f8}{\texttt{8a8b838ebbd2}}. Public training sources are \href{https://huggingface.co/datasets/cardiffnlp/tweet_eval}{TweetEval} and \href{https://huggingface.co/datasets/Salesforce/wikitext}{WikiText}; the scorer is \href{https://huggingface.co/unitary/toxic-bert}{Toxic-BERT}.
 
 Training uses \texttt{run\_experiment.py} with \texttt{src/data.py}, \texttt{src/train.py}, and \texttt{src/eval.py}; Slurm submission scripts are in \texttt{scripts/}. From the project root,
 \begin{quote}\small\ttfamily
-python src/final\_analysis.py
-\end{quote}
-rebuilds the matched-threshold and sensitivity outputs from logged trajectory CSVs without checkpoints. Raw continuation-toxicity and perplexity results are stored under \texttt{results/supplementary/}; reported endpoint tables should be generated directly from those files, rather than parsed from rounded prose or Markdown reports. The analysis environment used for this revision is Python 3.14, NumPy 2.5, pandas 3.0, SciPy 1.18, and Matplotlib 3.11.
+rebuilds the matched-threshold and sensitivity outputs from logged trajectory CSVs without checkpoints. Raw continuation-toxicity and perplexity results are stored under \texttt{results/supplementary/}. The analysis environment used for this revision is Python 3.14, NumPy 2.5, pandas 3.0, SciPy 1.18, and Matplotlib 3.11.
 
-Checkpoint-dependent work requires the archived model checkpoints. The project snapshot supplied for this revision does not contain the previously cited \path{geometry_controls.py}, \path{build_negated.py}, or their analysis counterparts, nor the raw clean-then-clean, geometry-recomputation, and negation outputs. The corresponding tables in this paper are therefore derived artifacts, not independently rebuildable from this snapshot alone. A complete release must add those scripts and outputs, document checkpoint retrieval, and record a fixed commit or release identifier.
+The release includes the checkpoint-dependent code in \path{src/supplementary/}: \path{geometry_controls.py} with \path{analyze_geometry_controls.py}, and \path{build_negated.py} with \path{analyze_negation.py}. Raw clean-then-clean endpoint files are under the continuation-toxicity and independent-perplexity \path{per_checkpoint/} directories; stepwise clean-then-clean logs are under \path{results/recovery_logs/}; geometry-recomputation and negation outputs are under \path{results/supplementary/geometry_controls/} and \path{results/supplementary/negation/}. The README gives the corresponding analysis and Slurm commands. Trained checkpoints are excluded from GitHub because of their size; the README states that the 30 trained and 24 edited checkpoints are archived on the TAU cluster and available from the authors on request, and that edited checkpoints can be rebuilt with \path{build_negated.py}.
 
 \section{Settings and Provenance}
 \label{app:settings}
-Table~\ref{tab:settings} lists the configuration. The cluster runs used PyTorch 1.12.1 and Transformers 4.30.0. The completed clean seed-0 checkpoint was trained on Colab and carried into the cluster experiment; it records Transformers 5.16.1, AdamW's fused Torch implementation, Trainer seed 42, gradient clipping 1.0, gradient accumulation 1, Adam $\beta_1=0.9$, $\beta_2=0.999$, and $\epsilon=10^{-8}$, with neither FP16 nor BF16 enabled. Describing all 27 runs as identically hosted would therefore be inaccurate. The Slurm accounting records identify the GPU of every cluster run: 24 of 26 ran on Titan Xp nodes and the 1\%, seed-2 contamination and recovery runs on an RTX 2080 node.
+Table~\ref{tab:settings} lists the configuration. The cluster runs used PyTorch 1.12.1 and Transformers 4.30.0. The completed clean seed-0 checkpoint was trained on Colab and carried into the cluster experiment; it records Transformers 5.16.1, AdamW's fused Torch implementation, Trainer seed 42, gradient clipping 1.0, gradient accumulation 1, Adam $\beta_1=0.9$, $\beta_2=0.999$, and $\epsilon=10^{-8}$, with neither FP16 nor BF16 enabled. The runs were not identically hosted. The Slurm accounting records identify the GPU of every cluster run: 24 of 26 ran on Titan Xp nodes and the 1\%, seed-2 contamination and recovery runs on an RTX 2080 node.
 
 The logs do not record decoding parameters, so we recovered them from the executed code. \texttt{src/eval.py} passes only \path{max_new_tokens=30} to the text-generation pipeline. Under Transformers 4.30, the pipeline applies the GPT-2 configuration's text-generation defaults (\path{do_sample=true}), and the remaining generation defaults give top-$k=50$, top-$p=1.0$, and temperature 1.0. A NumPy prompt-selection seed is not a Torch generation seed; no generation seed was set, so individual historical samples cannot be replayed. The endpoint re-evaluation uses the same parameters with explicit evaluation seeds.
 
@@ -94,14 +92,14 @@ Dose & Hate draws & Unique tweets & Tokens (\%) & Toxic val. (\%) & Recovery val
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures_v27/combined_vs_continuation_toxicity.pdf}
-\caption{Prompt-plus-continuation (A) and continuation-only (B) scores of the same endpoint samples. Faint lines: individual checkpoints; solid lines: condition means. ``Clean x2'' denotes the clean-then-clean control.}
+\caption{Prompt-plus-continuation (A) and continuation-only (B) scores of the same endpoint samples. Faint lines: individual checkpoints; solid lines: condition means.}
 \label{fig:combined}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures_v27/independent_perplexity.pdf}
-\caption{WikiText-103 test perplexity of the final checkpoints. Error bars are sample SD across three seeds. Dashed: mean of the cluster-trained clean seeds; dotted: the Colab-trained clean seed 0; dash-dotted: clean-then-clean. Pretrained GPT-2 scores 51.19.}
+\caption{WikiText-103 test perplexity of the final checkpoints. Error bars are sample SD across three seeds and faint dots are individual seeds. Filled diamonds mark the two cluster-trained clean controls; the hollow diamond marks Colab-trained clean seed 0. The dashed horizontal line is the cluster-clean mean. The purple dash-dotted line and narrow band show the reported clean-then-clean mean and sample SD ($23.95\pm0.04$). ``Clean x2'' denotes the clean-then-clean control. Pretrained GPT-2 scores 51.19.}
 \label{fig:ppl}
 \end{figure}
 
@@ -113,7 +111,7 @@ For each dose and seed, we subtract $\alpha C_{\mathrm{tox}}=\alpha(W_{d,s}-W_{0
 \label{app:blockgeom}
 The checkpoint geometry in Table~\ref{tab:geomctl} can also be examined by transformer block. Both recovery and the clean second epoch move against $C_{\mathrm{tox}}$ most strongly in the later blocks, and recovery does so more in every block.
 
-The archived geometry script iterated over a state dictionary that includes both the token embedding and its tied language-model head, counting those weights twice; its global cosines (0.58--0.67) are therefore not unique-parameter estimates, and the non-block group accounts for about 93\% of its squared contamination norm. Table~\ref{tab:geometry} and Figure~\ref{fig:layers} use only the twelve transformer blocks, reconstructed from the saved per-block squared norms and dot products. The block cosines agree with the checkpoint recomputation in Table~\ref{tab:geomctl}.
+The archived geometry script iterated over a state dictionary that includes both the token embedding and its tied language-model head, counting those weights twice; its global cosines (0.58--0.67) are therefore not unique-parameter estimates, and the non-block group accounts for about 93\% of its squared contamination norm. Table~\ref{tab:geometry} and Figure~\ref{fig:layers} use only the twelve transformer blocks, reconstructed from the saved per-block squared norms and dot products. The block cosines agree with the block-scope recomputation in Table~\ref{tab:geometry}.
 
 \begin{table*}[t]
 \centering\small
@@ -194,4 +192,5 @@ Dose & Seed & $B_s$ & $E_{d,s}$ & $H_{d,s}$ & Acquisition & Recovery & $\rho_{50
 \caption{All twelve paired trajectories. Orange: acquisition; blue: recovery. Faint lines: raw evaluations; solid lines: isotonic least-squares fits. Dotted horizontal lines: each seed's matched target. Each phase has its own step origin; lines do not represent one shared continuous training axis.}
 \label{fig:perseed}
 \end{figure*}
+
 

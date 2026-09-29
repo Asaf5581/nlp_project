@@ -17,3 +17,9 @@ paper/*.log
 paper/*.bbl
 paper/*.blg
 paper/*.out
+
+paper/**/*.aux
+paper/**/*.log
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.out

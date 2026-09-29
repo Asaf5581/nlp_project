@@ -31,6 +31,11 @@ CHECKPOINTS += [_ckpt('recovered', d, s, 'recovered') for d in DOSES for s in SE
 # 28-30: clean-then-clean control (clean model + the same second WikiText epoch as recovery),
 # trained by scripts/submit_clean_then_clean.sh
 CHECKPOINTS += [_ckpt('clean_then_clean', 0.0, s, 'recovered') for s in SEEDS]
+# 31-54: task-vector negation of the recovered models, W_R - alpha * (W_d - W_0),
+# built by src/supplementary/build_negated.py (alpha-major, then dose, then seed)
+ALPHAS = [0.5, 1.0]
+CHECKPOINTS += [dict(_ckpt(f'negated_a{a}', d, s, os.path.join('negated', f'alpha_{a}')), alpha=a)
+                for a in ALPHAS for d in DOSES for s in SEEDS]
 
 # One clean, one contaminated and one recovered checkpoint (plus the pretrained reference)
 # for the pilot run requested before the full submission.

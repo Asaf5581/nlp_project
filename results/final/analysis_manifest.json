@@ -30,6 +30,9 @@
     "results\\recovery_logs\\dose_0.05_seed_0.csv": "3940569976da253ae0623fbb0cda9aac88bd42bed957c75c44445eafcc9d757e",
     "results\\recovery_logs\\dose_0.05_seed_1.csv": "5a309400e51040ae60aed3bc0cca4e71e3f19ab118c5e0a7f059ecfe54b510be",
     "results\\recovery_logs\\dose_0.05_seed_2.csv": "99374c07dee72d5a01775c860773b385316ff5678232f01e6d8c01684a3030fc",
+    "results\\recovery_logs\\dose_0.0_seed_0.csv": "766fe60ef0d7819f52b245b394779e3728c39ed09771fb1a121b6030baa39dfd",
+    "results\\recovery_logs\\dose_0.0_seed_1.csv": "b64d03e26b83007f9887497fde2adcd47b477143d2bc23928488911383979b94",
+    "results\\recovery_logs\\dose_0.0_seed_2.csv": "8f252da7a79569e45b41c34c10f231d73e1739e9dc5b8cda04c8ca147806b4fb",
     "results\\recovery_logs\\dose_0.1_seed_0.csv": "04db84e798aac881e3cd218937e02310c359304d03ae4f2ce1e123c229890ce3",
     "results\\recovery_logs\\dose_0.1_seed_1.csv": "a51d654ea2551c5974619275c4faf7221ae86f636fbfe573068c1ffe1b3d5c23",
     "results\\recovery_logs\\dose_0.1_seed_2.csv": "624218fc6572cbb7a79fedfb043c3bfe7246c6192b55bf300a3e5730b971c73c",
@@ -38,7 +41,7 @@
     "results\\recovery_logs\\dose_0.25_seed_2.csv": "ec9e0f36d98a160f4b3eed6b7eff6bff9ccfab327923c010225aa9cebddb55c6",
     "results\\layer_distances.csv": "c4f122d6291ec3d4fadd45773b9a00f9b83e141757a37619834cbf93940d8f87",
     "results\\weight_distances.csv": "c30fbb5891c11264de47269f36bbfc0a16c23231d8e793a35989d6ac7ec76cdb",
-    "src\\final_analysis.py": "feb954e55896a2c4d439e59afd968f210a6c6154c59731605a4e69a2b44ba998",
+    "src\\final_analysis.py": "d3334d2bff1ed6877f2cb2576245e5daba832104f75cf4e02c05cea2fc48bb19",
     "src\\supplementary_report_tables.py": "da88b683495a6f94e2b9d3dee29c78c6aa223771bc97295d1886af9e7ce50d09",
     "docs\\supplementary\\continuation_toxicity_report.md": "9c05cd4d2125ab5452a4f7e7732b883ed242775a774d8a697f0c49fc8fe153f2",
     "docs\\supplementary\\independent_perplexity_report.md": "3db8829a6bbdb8c0257ceafadf0fd18ad01b999def83e8d94a75c638c7e14e36"

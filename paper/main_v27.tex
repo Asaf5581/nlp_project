@@ -19,7 +19,7 @@ Tel Aviv University \\
 \maketitle
 
 \begin{abstract}
-How quickly does a language model acquire toxic behavior, and how much clean-data training is needed to reduce it? We study unaligned GPT-2-small using four proportions of hate-labeled tweets mixed with WikiText-103, three data seeds, and one subsequent epoch of WikiText training. We compare acquisition and recovery at the same halfway level between a seed-matched clean-control reference and the contamination endpoint, estimated without selecting a peak. Monotone smoothing and explicit crossing intervals yield per-run asymmetry lower bounds above one, but two of twelve recovery trajectories remain censored at 5,900 recorded steps. No recorded recovery evaluation reaches the pooled clean-control reference. Re-evaluating the final checkpoints on generated continuations alone preserves the paired contamination--recovery difference and leaves recovered models about four times above the clean control. Held-out test perplexity rises by at most 2.2\% after contamination. Transformer-block displacements show net parameter non-reversal, but cannot distinguish toxicity-specific changes from ordinary continued training. These results support a protocol-specific difference between acquisition and partial recovery, rather than permanent resistance to recovery.
+How quickly does a language model acquire toxic behavior, and how much clean-data training is needed to reduce it? We study unaligned GPT-2-small using four proportions of hate-labeled tweets mixed with WikiText-103, three data seeds, and one subsequent epoch of WikiText training. We compare acquisition and recovery at the same halfway level between a seed-matched clean-control reference and the contamination endpoint. Monotone smoothing and explicit crossing intervals yield per-run asymmetry lower bounds above one, but two of twelve recovery trajectories remain censored at 5,900 recorded steps. No recorded recovery evaluation reaches the pooled clean-control reference. Scoring generated continuations alone preserves the paired difference and leaves recovered models about four times above both the clean control and a clean-then-clean control trained for the same additional epoch. Held-out test perplexity rises by at most 2.2\% after contamination. In parameter space, recovery mostly follows the matched clean epoch and undoes about a third of the toxicity-associated displacement; subtracting half of that displacement brings toxicity close to the clean level at a 2\% perplexity cost. These results support a protocol-specific difference between acquisition and partial recovery, rather than permanent resistance to recovery.
 \end{abstract}
 
 \section{Introduction}
@@ -31,8 +31,8 @@ The main findings are:
 \begin{itemize}
 \item \textbf{Matched comparison.} Acquisition reaches a common 50\% target sooner than recovery in all twelve smoothed trajectories. Figure~\ref{fig:rho} and Table~\ref{tab:matched} report per-seed lower bounds and between-seed variation, accounting for the 50-step evaluation grid and incomplete recovery.
 \item \textbf{Finite-horizon persistence.} Recovery reduces the measured score but no recorded evaluation reaches the pooled clean-control reference. Whether a run reaches the 50\% target depends on endpoint estimation and trajectory smoothing (Section~\ref{sec:results}).
-\item \textbf{Endpoint re-evaluation.} Scoring continuations separately from prompts, with five samples per prompt, preserves the contamination--recovery difference; held-out WikiText-103 test perplexity changes by at most 2.2\% (Section~\ref{sec:endpoint}).
-\item \textbf{Limited geometric conclusion.} Transformer-block measurements show net non-reversal. They do not establish retained toxic representations or toxicity-specific counteraction (Section~\ref{sec:geometry}).
+\item \textbf{Endpoint re-evaluation.} Scoring continuations separately from prompts, with five samples per prompt, preserves the contamination--recovery difference, and a clean-then-clean control trained for the same second epoch stays at the clean level; held-out WikiText-103 test perplexity changes by at most 2.2\% (Section~\ref{sec:endpoint}).
+\item \textbf{Partial geometric counteraction.} Recovery mostly follows the direction of a matched clean epoch and removes about a third of the toxicity-associated displacement, more than the clean epoch does in every run. Subtracting half of that displacement from the recovered models brings their toxicity close to the clean level at a 2\% perplexity cost (Section~\ref{sec:geometry}).
 \end{itemize}
 Code, logs, and analysis scripts are available at \repourl.
 
@@ -52,7 +52,7 @@ Code, logs, and analysis scripts are available at \repourl.
 \subsection{Behavioral Recovery and Parameter Change}
 Reduced output toxicity need not imply removal of the underlying capability. \citet{lee2024mechanistic} analyze DPO detoxification in GPT-2-medium and Llama2-7B and find mechanisms that bypass toxic behavior. \citet{jain2024mechanistically} describe small modifications that preserve capabilities on procedurally defined tasks. \citet{hu2024unlearning} show that benign relearning can restore outputs suppressed by approximate unlearning. Pretraining-data filtering offers another approach to limiting unwanted knowledge \citep{obrien2025deep}.
 
-Task arithmetic demonstrates that subtracting a fine-tuning displacement can change behavior, including reducing toxic generation \citep{ilharco2023task}. Linear mode connectivity studies the loss along paths between trained weights \citep{frankle2020connectivity}. Neither result makes endpoint cosine a test of unlearning: we measure no interpolation losses and perform no task-vector intervention. The gap addressed here is narrower: a paired temporal comparison under the same toxicity target, accompanied by descriptive parameter measurements and an audit of their limitations.
+Task arithmetic demonstrates that subtracting a fine-tuning displacement can change behavior, including reducing toxic generation \citep{ilharco2023task}. Linear mode connectivity studies the loss along paths between trained weights \citep{frankle2020connectivity}. Neither result makes endpoint cosine a test of unlearning, so we complement cosines with a task-vector negation of the recovered models; we measure no interpolation losses. The gap addressed here is narrower: a paired temporal comparison under the same toxicity target, accompanied by descriptive parameter measurements and an audit of their limitations.
 
 \section{Experimental Design}
 \subsection{Models, Data, and Exposure}
@@ -63,12 +63,12 @@ WikiText-103 \citep{merity2017pointer} provides the reference corpus. The implem
 Hate tweets are sampled with replacement; WikiText rows are sampled without replacement. Thus 1\%, 5\%, 10\%, and 25\% doses correspond to 500, 2,500, 5,000, and 12,500 pre-split hate draws. The reconstructed mean training-token proportions are 0.44\%, 2.29\%, 4.73\%, and 13.01\%, respectively. Higher doses change both source proportion and repetition. Appendix~\ref{app:data} gives token counts, source revisions, and a sanitized example.
 
 \subsection{Training and Evaluation}
-Figure~\ref{fig:pipeline} shows the protocol. Fifteen first-phase runs cover five doses and data seeds $s\in\{0,1,2\}$; twelve positive-dose endpoints start recovery runs. Each phase uses one epoch, batch size eight, learning rate $5\times10^{-5}$ with linear decay and no warmup, AdamW, and no weight decay. A new Trainer resets optimizer and scheduler state for recovery. The planned horizon is 5,938 optimizer updates; the positive-dose CSVs end at step 5,900, which is our recorded horizon. We do not assign an unobserved score to the final checkpoint. Dataset sampling and split seeds vary, while the Trainer seed is 42 in all runs. The three runs therefore quantify data-seed variation, not three independently chosen optimizer seeds. According to the Slurm accounting records, 24 of the 26 cluster runs used a Titan Xp GPU and the two 1\%, seed-2 runs an RTX 2080; the clean seed-0 run was trained on Colab (Appendix~\ref{app:settings}).
+Figure~\ref{fig:pipeline} shows the protocol. Fifteen first-phase runs cover five doses and data seeds $s\in\{0,1,2\}$; twelve positive-dose endpoints start recovery runs. To separate recovery from continued training, each clean control also receives the identical second epoch, with the same recovery data, order, and fresh optimizer (\emph{clean-then-clean}). Each phase uses one epoch, batch size eight, learning rate $5\times10^{-5}$ with linear decay and no warmup, AdamW, and no weight decay. A new Trainer resets optimizer and scheduler state for recovery. The planned horizon is 5,938 optimizer updates; the positive-dose CSVs end at step 5,900, which is our recorded horizon. We do not assign an unobserved score to the final checkpoint. Dataset sampling and split seeds vary, while the Trainer seed is 42 in all runs. The three runs therefore quantify data-seed variation, not three independently chosen optimizer seeds. According to the Slurm accounting records, 24 of the 26 cluster runs used a Titan Xp GPU and the two 1\%, seed-2 runs an RTX 2080; the clean seed-0 run was trained on Colab (Appendix~\ref{app:settings}).
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures_v27/pipeline.pdf}
-\caption{Training and analysis pipeline. Each first-phase model starts from pretrained GPT-2; the $d=0$ branch supplies the clean-control reference. Recovery starts from each positive-dose model and resets the optimizer and schedule. The endpoint evaluation re-scores the final checkpoints without training.}
+\caption{Training and analysis pipeline. Each first-phase model starts from pretrained GPT-2; the $d=0$ branch supplies the clean-control reference. Recovery starts from each positive-dose model and resets the optimizer and schedule; the clean controls receive the same second epoch. The endpoint evaluation re-scores the final checkpoints without training.}
 \label{fig:pipeline}
 \end{figure*}
 
@@ -123,7 +123,7 @@ Figure~\ref{fig:trajectories} shows the observed trajectories. Five-evaluation c
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures_v27/phase_trajectories.pdf}
-\caption{Observed acquisition and recovery trajectories. Lines are means across three seeds at shared evaluation steps; shaded bands are sample SD. These are prompt-plus-continuation scores. Smoothing is applied to individual runs for crossing analysis, not to the plotted dose means.}
+\caption{Observed acquisition and recovery trajectories. Lines are means across three seeds at shared evaluation steps; shaded bands are sample SD. The grey line is the clean-then-clean control over the same second epoch. These are prompt-plus-continuation scores. Smoothing is applied to individual runs for crossing analysis, not to the plotted dose means.}
 \label{fig:trajectories}
 \end{figure*}
 
@@ -159,7 +159,7 @@ Exponential fits reach $H_{d,s}$ within 5,900 steps for eight of twelve runs, co
 
 Using endpoint averages of one, three, five, or ten evaluations changes the number of isotonic recovery crossings from eight to ten. Replacing $B_s$ by each clean run's own endpoint estimate changes some bounds (Table~\ref{tab:cleanref}), and a pooled rather than seed-specific control reference changes some fitted crossing classifications. The direction of the paired acquisition--recovery difference persists in the tabulated analyses, but the exact magnitude and recovery success count depend on these choices. The temporal clean-control SD, about 0.0140, mixes training evolution and evaluation variation; it is not a separately estimated generation-noise standard deviation.
 
-The stronger endpoint-independent observation is non-return to the reference during recorded recovery. Pooling 355 clean-run evaluations gives 0.1135 and temporal SD 0.0140; the auxiliary $3\sigma$ level is 0.1555. The minimum raw recovery score across all twelve runs is 0.1742, above both levels. This establishes non-return only for the recorded evaluations, fixed prompts, scorer, and one-epoch decaying-learning-rate schedule. It does not establish a permanent floor or behavior between evaluations.
+The stronger endpoint-independent observation is non-return to the reference during recorded recovery. Pooling 355 clean-run evaluations gives 0.1135 and temporal SD 0.0140; the auxiliary $3\sigma$ level is 0.1555. The minimum raw recovery score across all twelve runs is 0.1742, above both levels. The clean-then-clean runs, trained for the same second epoch, average 0.119 (SD 0.015), and none of their 354 evaluations reaches 0.1742 (Figure~\ref{fig:trajectories}). Additional clean training alone therefore does not raise the score to the recovered level. This establishes non-return only for the recorded evaluations, fixed prompts, scorer, and one-epoch decaying-learning-rate schedule. It does not establish a permanent floor or behavior between evaluations.
 
 \subsection{Endpoint Re-Evaluation}
 \label{sec:endpoint}
@@ -177,63 +177,59 @@ Dose & Contaminated & Recovered & C$-$R (paired) & Contaminated & Recovered & R$
 \inputrows{tables_v27/supplementary_summary.tex}
 \midrule
 Clean control & \multicolumn{3}{c}{$0.050\pm0.003$} & \multicolumn{3}{c}{$24.21\pm0.01$\,$^\dagger$} \\
+Clean-then-clean & \multicolumn{3}{c}{$0.049\pm0.009$} & \multicolumn{3}{c}{$23.95\pm0.04$} \\
 Pretrained GPT-2 & \multicolumn{3}{c}{0.077} & \multicolumn{3}{c}{51.19} \\
 \bottomrule
 \end{tabular}
-\caption{Endpoint re-evaluation of the final checkpoints: means and sample SD across three seeds; differences are paired within seed. $^\dagger$Cluster-trained clean seeds 1--2; including the Colab-trained seed 0 gives $24.52\pm0.54$ (Appendix~\ref{app:endpoint}).}
+\caption{Endpoint re-evaluation of the final checkpoints: means and sample SD across three seeds; differences are paired within seed. Clean-then-clean models received the same second epoch as the recovered models. $^\dagger$Cluster-trained clean seeds 1--2; including the Colab-trained seed 0 gives $24.52\pm0.54$ (Appendix~\ref{app:endpoint}).}
 \label{tab:endpoint}
 \end{table*}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures_v27/continuation_toxicity_by_dose.pdf}
-\caption{Continuation-only toxicity of the final checkpoints. Error bars are sample SD across three seeds. The dashed line is the clean-control mean, the reference for this metric.}
+\caption{Continuation-only toxicity of the final checkpoints. Error bars are sample SD across three seeds. The dashed line is the clean-control mean, the reference for this metric; the dotted line, nearly identical, is the clean-then-clean mean.}
 \label{fig:continuation}
 \end{figure}
 
-Removing the prompt lowers every condition's score by 0.03--0.06 (Figure~\ref{fig:combined}), but it does not shrink the contamination--recovery difference: the paired difference is 0.15--0.19 under continuation-only scoring, compared with 0.13--0.17 on the combined text of the same samples. The difference is positive in all twelve dose--seed pairs, and a bootstrap over prompts gives a 95\% interval above zero for every pair. Recovered models remain near 0.20 at every dose, about four times the continuation-only clean control of 0.050, and recovery removes 50--56\% of the contamination-induced excess (Table~\ref{tab:endpoint}, Figure~\ref{fig:continuation}). The combined score of the clean controls, 0.114, reproduces the logged reference of 0.1135. The prompt-content effect therefore does not explain the observed persistence.
+Removing the prompt lowers every condition's score by 0.03--0.06 (Figure~\ref{fig:combined}), but it does not shrink the contamination--recovery difference: the paired difference is 0.15--0.19 under continuation-only scoring, compared with 0.13--0.17 on the combined text of the same samples. The difference is positive in all twelve dose--seed pairs, and a bootstrap over prompts gives a 95\% interval above zero for every pair. Recovered models remain near 0.20 at every dose, about four times the continuation-only clean control of 0.050, and recovery removes 50--56\% of the contamination-induced excess (Table~\ref{tab:endpoint}, Figure~\ref{fig:continuation}). The combined score of the clean controls, 0.114, reproduces the logged reference of 0.1135. The prompt-content effect therefore does not explain the observed persistence. The additional epoch does not explain it either: the clean-then-clean models score $0.049\pm0.009$, indistinguishable from the one-epoch clean control, and each recovered model remains 0.149--0.165 above the clean-then-clean model of the same seed.
 
-Contamination changes test perplexity little: relative to the cluster-trained clean controls, the increase is 0.00, 0.07, 0.17, and 0.53 (2.2\%) as dose increases. Recovery lowers perplexity in all twelve pairs and ends 0.4--0.6 below the clean control. The recovered models received an additional epoch of in-domain training that the clean controls did not, so we do not read this as recovery improving on the clean state.
+Contamination changes test perplexity little: relative to the cluster-trained clean controls, the increase is 0.00, 0.07, 0.17, and 0.53 (2.2\%) as dose increases. Recovery lowers perplexity in all twelve pairs. Part of this reduction is ordinary continued training: the clean-then-clean models improve from 24.21 to 23.95. Recovered models end 0.10--0.30 below their matched clean-then-clean model, with the smallest gain at 25\% dose. One plausible reason is data coverage rather than any benefit of contamination: a recovered model has seen two different WikiText samples, whereas the clean-then-clean model sees the same rows twice. Recovery thus leaves no measurable language-modeling cost.
 
 \subsection{Parameter Geometry}
 \label{sec:geometry}
-We distinguish pretrained weights $W_{\mathrm{pre}}$, the first-phase clean control $W_{0,s}$, contaminated weights $W_{d,s}$, and recovered weights $W^{R}_{d,s}$. Define $C=W_{d,s}-W_{\mathrm{pre}}$ and $R=W^{R}_{d,s}-W_{d,s}$. Exact reversal of the full displacement would require $R=-C$; opposite direction alone would require cosine $-1$. A positive endpoint cosine shows net non-reversal, but neither measures the training path nor tests removal of toxic information.
+We distinguish pretrained weights $W_{\mathrm{pre}}$, the first-phase clean control $W_{0,s}$, contaminated weights $W_{d,s}$, recovered weights $W^{R}_{d,s}$, and clean-then-clean weights $W^{CC}_{0,s}$. Define $C=W_{d,s}-W_{\mathrm{pre}}$ and $R=W^{R}_{d,s}-W_{d,s}$, the toxicity-associated displacement $C_{\mathrm{tox}}=W_{d,s}-W_{0,s}$, and the matched clean second epoch $R_{\mathrm{cc}}=W^{CC}_{0,s}-W_{0,s}$. Exact reversal of the full displacement would require $R=-C$; opposite direction alone would require cosine $-1$. A positive endpoint cosine shows net non-reversal, but neither measures the training path nor tests removal of toxic information.
 
-The archived global calculation iterated over a state dictionary that includes both the token embedding and its tied language-model head. It therefore counted those weights twice. The resulting 0.58--0.67 global cosines are not unique-parameter estimates. The archived non-block group accounts for about 93\% of the squared contamination norm, including this duplication. We cannot separate its components from aggregate norms, so Table~\ref{tab:geometry} uses only the twelve transformer blocks, reconstructed from saved per-layer squared norms and dot products. Figure~\ref{fig:layers} shows the individual blocks.
+All quantities in Table~\ref{tab:geomctl} are computed from the checkpoints over unique parameters, counting the tied token embedding and language-model head once. The contamination--recovery cosine is positive and decreases with dose (0.64 to 0.55); restricted to the twelve transformer blocks, it is 0.127 to 0.089, reproducing the archived block summaries (Appendix~\ref{app:blockgeom}). As before, a decreasing cosine is not evidence of counteraction, because changing the mixture can rotate $C$ away from a WikiText-like $R$.
 
 \begin{table*}[t]
 \centering
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-Dose & $\|C\|_2$ & $\|R\|_2$ & $\|C+R\|_2$ & $\cos(C,R)$ \\
+Dose & $\cos(C,R)$ & $\cos(R,C_{\mathrm{tox}})$ & Removed by $R$ & Removed by $R_{\mathrm{cc}}$ & $\cos(R,R_{\mathrm{cc}})$ \\
 \midrule
-\inputrows{tables_v27/block_geometry.tex}
+\inputrows{tables_v27/geometry_controls.tex}
 \bottomrule
 \end{tabular}
-\caption{Transformer-block geometry only: means and sample SD across three seeds. The embedding/non-block group is excluded because its saved norms contain tied-weight duplication. Values are reconstructed from archived per-block summaries.}
-\label{tab:geometry}
+\caption{Checkpoint geometry over unique parameters: means and sample SD across three seeds. ``Removed'' is the projection $-\langle X, C_{\mathrm{tox}}\rangle/\|C_{\mathrm{tox}}\|^2$ of a displacement $X$ onto $-C_{\mathrm{tox}}$, the fraction of $C_{\mathrm{tox}}$ undone along its own direction. $R_{\mathrm{cc}}$ is the clean-then-clean second epoch of the same seed.}
+\label{tab:geomctl}
 \end{table*}
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{figures_v27/layer_geometry.pdf}
-\caption{Per-block endpoint geometry. Left: contamination--recovery cosine. Right: contamination displacement norm. Error bars are sample SD across three seeds. Neither panel isolates a toxicity-specific direction; all blocks also undergo ordinary WikiText adaptation.}
-\label{fig:layers}
-\end{figure*}
+Recovery has a negative cosine with $C_{\mathrm{tox}}$ ($-0.26$ to $-0.31$), and its projection removes 32--33\% of $C_{\mathrm{tox}}$. The matched clean epoch also moves against $C_{\mathrm{tox}}$ and removes 17--19\%: part of $C_{\mathrm{tox}}$ reflects differences in the sampled WikiText rows that any further clean training reduces. The difference between the two, 13--15 percentage points, is positive in all twelve dose--seed pairs and grows slightly with dose; within the transformer blocks it is 8--9 points, again in all twelve pairs (Appendix~\ref{app:blockgeom}). Recovery therefore counteracts the toxicity-associated displacement beyond ordinary continued training, but leaves about two thirds of it in place along its own direction. Across the twelve runs, neither fraction predicts the behavioral residual above the clean-then-clean control (Spearman $|r|\le0.33$, $p\ge0.3$). Seed 0, whose clean control was trained on Colab, shows the smallest removal (0.25--0.28, against 0.33--0.38), consistent with its $C_{\mathrm{tox}}$ also containing the difference in training setup. Otherwise, recovery largely follows the clean second epoch: $\cos(R,R_{\mathrm{cc}})$ is 0.89--0.91 over all parameters.
 
-The combined block cosines remain positive (0.089--0.127), supporting net non-reversal with much smaller alignment than the global statistic. A cosine that decreases with dose is not evidence of counteraction: changing the mixture can rotate $C$ away from a WikiText-like $R$ even if recovery does not oppose the toxicity-associated component. Likewise, the distances between recovered models and first-phase clean controls lack both a cross-seed noise floor and a matched second training epoch. We do not use those distances as evidence of residual toxic information.
+Recovered models lie 45--50 units from their same-seed clean-then-clean models, increasing with dose. Clean controls of different seeds are 45 units apart and clean-then-clean models 67 units apart, so these distances do not separate toxicity-specific differences from seed variation. $C_{\mathrm{tox}}$ itself is only toxicity-associated: changing $d$ also changes the sampled WikiText rows. A projection describes movement along one direction and does not by itself show removal of toxic information.
 
-A more specific analysis would compare $R$ with $C_{\mathrm{tox}}=W_{d,s}-W_{0,s}$, report $\cos(R,C_{\mathrm{tox}})$ and its projection onto $-C_{\mathrm{tox}}$, and compare against clean-then-clean training. Even this difference is only toxicity-associated: changing $d$ also changes the sampled WikiText rows. The checkpoints required for this analysis are archived, but the analysis is not part of this report, and no result from it is assumed here.
+\paragraph{Task-vector negation.} To test whether the residual behavior lies along $C_{\mathrm{tox}}$, we subtract it from the recovered models, $W^{R}_{d,s}-\alpha C_{\mathrm{tox}}$, and repeat the endpoint evaluation without further training (Appendix~\ref{app:negation}). With $\alpha=0.5$, continuation-only toxicity falls from about 0.20 to 0.055--0.066 in all twelve runs, removing 86--99\% of the gap to the clean-then-clean control, while test perplexity rises from 23.7 to 24.1 (about 2\%). With $\alpha=1$, which equals the clean control moved by the recovery displacement ($W_{0,s}+R$), toxicity falls to 0.026--0.037, below the clean control, at a 7\% perplexity cost. The edited models produce full-length continuations with bigram diversity similar to the recovered and clean-then-clean models. The residual toxicity after recovery is therefore largely carried by the toxicity-associated displacement, which ordinary clean training leaves mostly in place.
 
 \section{Conclusion}
-Under the tested GPT-2 protocol, acquisition reaches a seed-relative halfway toxicity target sooner than recovery. Accounting for smoothing and interval censoring supports that directional comparison, while leaving some ratios unbounded above and some recovery times beyond the recorded horizon. No recorded recovery score returns to the clean-control reference, and continuation-only scoring of the final checkpoints preserves this gap while test perplexity changes little. Geometry supports only net parameter non-reversal; ordinary continued training remains a confound. These findings motivate longer recovery schedules and matched clean-then-clean controls before drawing broader conclusions about safety or unlearning.
+Under the tested GPT-2 protocol, acquisition reaches a seed-relative halfway toxicity target sooner than recovery. Accounting for smoothing and interval censoring supports that directional comparison, while leaving some ratios unbounded above and some recovery times beyond the recorded horizon. No recorded recovery score returns to the clean-control reference, continuation-only scoring of the final checkpoints preserves this gap, and a clean-then-clean control trained for the same epoch stays at the clean level, so continued training does not explain the residual. Test perplexity changes little. In parameter space, recovery mostly follows the matched clean epoch and undoes only part of the toxicity-associated displacement; subtracting half of that displacement removes most of the residual toxicity at a 2\% perplexity cost. These findings motivate longer recovery schedules and experiments with larger and aligned models before drawing broader conclusions about safety or unlearning.
 
 \section*{Limitations}
 The study uses one small unaligned base model, one classifier, one fixed prompt set, three data seeds, and a finite recovery budget with a learning rate decaying toward zero. It does not test safety-aligned instruction models. The logged trajectories use prompt-plus-continuation scores with one sample per prompt; continuation-only scores are available only for the final checkpoints, so the crossing analysis still relies on the combined score. Training-time generations were not saved and no generation seed was set, which prevents exact replay. Toxic-BERT also underrates some clearly hateful content (Appendix~\ref{app:data}).
 
 The reference is a mean over evolving clean-control checkpoints, not an observed pretrained score. Five-evaluation endpoint averaging and monotone smoothing are analysis choices; both can affect crossings, especially near a plateau. Isotonic regression can flatten real reversals and uses future observations. Three seeds are insufficient for precise uncertainty estimates, and SD bars do not quantify classifier bias, curve-fitting uncertainty, or censoring uncertainty.
 
-Repeated hate examples and cross-phase WikiText overlap limit interpretations of dose. Recovered models trained one epoch longer than the clean controls, which affects both toxicity and perplexity comparisons, and the clean seed-0 control was trained on Colab rather than the cluster. Saved geometric summaries cannot provide cross-seed controls, unique-parameter global norms, or toxicity-specific counteraction. A tweet-versus-Wikipedia probe is confounded by corpus identity and cannot locate toxicity representations; a domain-matched probe would be required. These limitations permit a bounded behavioral comparison, not claims of permanent harm persistence or preserved internal toxic features.
+Repeated hate examples and cross-phase WikiText overlap limit interpretations of dose. The clean-then-clean control matches the recovery budget, but a recovered model and its control still differ in the WikiText rows seen during the first epoch. The clean seed-0 control was trained on Colab rather than the cluster; its clean-then-clean continuation was trained on the cluster. The toxicity-associated direction $C_{\mathrm{tox}}$ also contains differences in the sampled WikiText rows, and projections measure movement along one direction rather than removal of toxic information. The negation uses each seed's own clean control, which is not available for a model contaminated outside a controlled experiment, and only two untuned values of $\alpha$. A tweet-versus-Wikipedia probe is confounded by corpus identity and cannot locate toxicity representations; a domain-matched probe would be required. These limitations permit a bounded behavioral comparison, not claims of permanent harm persistence or preserved internal toxic features.
 
 \section*{AI Disclosure and Reflection}
 During this project, AI assistants helped structure training code, write cluster scripts, and refine the paper: Gemini [exact model: TBD], ChatGPT [exact model: TBD], Codex [exact model: TBD], and Claude Code (Claude Opus 5.5). Gemini assisted with boilerplate geometric-analysis code and migration from Colab to Slurm. Claude Code assisted with auditing the paper against code and logged results, implementing and running the endpoint re-evaluation, regenerating figures, and drafting corrections. The authors retain responsibility for experimental design, analysis, and conclusions. These tools supported debugging and quantitative review and helped produce better-grounded conclusions.
@@ -250,7 +246,7 @@ Training uses \texttt{run\_experiment.py} with \texttt{src/data.py}, \texttt{src
 \begin{quote}\small\ttfamily
 python src/final\_analysis.py
 \end{quote}
-rebuilds the matched-threshold, sensitivity, and geometry tables and figures from the logged CSVs in \texttt{results/final}, \path{paper/figures_v27}, and \path{paper/tables_v27}. It requires neither checkpoints nor training. The analysis environment is Python 3.14, NumPy 2.5, pandas 3.0, SciPy 1.18, and Matplotlib 3.11. The endpoint re-evaluation code is in \texttt{src/supplementary/}, with Slurm batch files in \texttt{scripts/supplementary/} and per-sample outputs in \texttt{results/supplementary/}.
+rebuilds the matched-threshold, sensitivity, and geometry tables and figures from the logged CSVs; outputs go to \texttt{results/final} and to the figure and table folders of \texttt{paper/}. It requires neither checkpoints nor training. The analysis environment is Python 3.14, NumPy 2.5, pandas 3.0, SciPy 1.18, and Matplotlib 3.11. The endpoint re-evaluation code is in \texttt{src/supplementary/}, with Slurm batch files in \texttt{scripts/supplementary/} and per-sample outputs in \texttt{results/supplementary/}. The clean-then-clean control is trained by \path{scripts/submit_clean_then_clean.sh}; \path{geometry_controls.py} computes the checkpoint geometry and \path{build_negated.py} the negated models, each with an \path{analyze_*.py} counterpart.
 
 \section{Settings and Provenance}
 \label{app:settings}
@@ -273,6 +269,8 @@ Prompt selection & 100 source tweets from TweetEval-offensive train; NumPy seed 
 Training-time generation & One continuation per prompt every 50 updates; sampling with top-$k=50$, top-$p=1.0$, temperature 1.0; maximum 30 new tokens; no generation seed. \\
 Scoring & \texttt{unitary/toxic-bert}; extract \texttt{toxic} probability; classifier truncation at 512 tokens; model revision unpinned. \\
 Endpoint generation & Same prompts and decoding; five samples per prompt; evaluation seed $20260928+\text{prompt index}$, shared across models; continuation decoded from generated token ids. \\
+Task-vector negation & $W^{R}_{d,s}-\alpha(W_{d,s}-W_{0,s})$ for $\alpha\in\{0.5,1\}$, all parameters including embeddings, no retraining; same endpoint evaluation. \\
+Clean-then-clean control & Each clean control continued for one epoch on its seed's recovery data (\texttt{run\_experiment.py --phase recover --dose 0.0}); same code, data order, and optimizer reset as recovery; Titan Xp, 2.5 hours per run. \\
 Endpoint perplexity & WikiText-103 test; same row filter; 524 exact training duplicates removed; 2,322 rows, 269,110 scored tokens; context 128, stride 64; fp32. \\
 Hardware & Training: 24 cluster runs on Titan Xp, two (1\%, seed 2) on RTX 2080, clean seed 0 on Colab; one GPU per run, 2.2--2.7 hours. Endpoint evaluation: Titan Xp. \\
 Software & Cluster: PyTorch 1.12.1, Transformers 4.30.0, Datasets 2.21.0. Clean seed 0: Transformers 5.16.1. \\
@@ -327,29 +325,83 @@ Dose & Hate draws & Unique tweets & Tokens (\%) & Toxic val. (\%) & Recovery val
 
 \section{Endpoint Re-Evaluation Details}
 \label{app:endpoint}
-\paragraph{Continuation-only toxicity.} Each of the 28 models generates five samples for each of the 100 prompts, 14,000 samples in total. The evaluation seed depends only on the prompt, so all models use the same random draws, and all generation ran on the same GPU type. Sampling variability is reported separately from training-seed variability: the median half-width of a 95\% bootstrap interval over prompts is 0.044 per checkpoint. Samples contain 29.98 new tokens on average; 1.0\% have fewer than three words, and 42 (0.3\%) contain only whitespace, all from one prompt whose 50-character prefix ends in spaces. Offensive prompts yield higher continuation scores in every condition (clean 0.068 vs.\ 0.044; contaminated 0.40--0.43 vs.\ 0.33--0.38; recovered 0.27--0.30 vs.\ 0.17--0.19), but contamination and recovery shift both groups. Figure~\ref{fig:combined} compares both scores on the same samples.
+\paragraph{Continuation-only toxicity.} Each model (27 checkpoints, pretrained GPT-2, three clean-then-clean models, and 24 negated models) generates five samples for each of the 100 prompts. The evaluation seed depends only on the prompt, so all models use the same random draws, and all generation ran on the same GPU type. Sampling variability is reported separately from training-seed variability: the median half-width of a 95\% bootstrap interval over prompts is 0.044 per checkpoint. Samples contain 29.98 new tokens on average; 1.0\% have fewer than three words, and 42 (0.3\%) contain only whitespace, all from one prompt whose 50-character prefix ends in spaces. Offensive prompts yield higher continuation scores in every condition (clean 0.068 vs.\ 0.044; contaminated 0.40--0.43 vs.\ 0.33--0.38; recovered 0.27--0.30 vs.\ 0.17--0.19), but contamination and recovery shift both groups. Figure~\ref{fig:combined} compares both scores on the same samples.
 
 \paragraph{Test perplexity.} Test rows are filtered as in training. Every retained row was compared with the WikiText-103 training split, a superset of every clean training subset, and the 524 exact matches, all section headings, were removed; no test row matches a HatEval tweet. Near duplicates were not checked. Rows are scored independently with a 128-token context; the 939 longer rows use a stride-64 sliding window in which each window scores only tokens not scored before. Padding is excluded, and the summed negative log-likelihood over all 269,110 targets is exponentiated once. The Colab-trained clean seed 0 (25.14) is the only clear outlier; the two cluster-trained clean seeds differ by 0.01 (Figure~\ref{fig:ppl}).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures_v27/combined_vs_continuation_toxicity.pdf}
-\caption{Prompt-plus-continuation (A) and continuation-only (B) scores of the same endpoint samples. Faint lines: individual checkpoints; solid lines: condition means.}
+\caption{Prompt-plus-continuation (A) and continuation-only (B) scores of the same endpoint samples. Faint lines: individual checkpoints; solid lines: condition means. ``Clean x2'' denotes the clean-then-clean control.}
 \label{fig:combined}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures_v27/independent_perplexity.pdf}
-\caption{WikiText-103 test perplexity of the final checkpoints. Error bars are sample SD across three seeds. Dashed: mean of the cluster-trained clean seeds; dotted: the Colab-trained clean seed 0. Pretrained GPT-2 scores 51.19.}
+\caption{WikiText-103 test perplexity of the final checkpoints. Error bars are sample SD across three seeds. Dashed: mean of the cluster-trained clean seeds; dotted: the Colab-trained clean seed 0; dash-dotted: clean-then-clean. Pretrained GPT-2 scores 51.19.}
 \label{fig:ppl}
 \end{figure}
+
+\section{Task-Vector Negation}
+\label{app:negation}
+For each dose and seed, we subtract $\alpha C_{\mathrm{tox}}=\alpha(W_{d,s}-W_{0,s})$ from every parameter of the recovered model, editing the tied embedding once, and evaluate the result exactly as in Appendix~\ref{app:endpoint}. Table~\ref{tab:negation} reports both metrics. Toxicity falls below the recovered value in all twelve runs for both $\alpha$. The edited models generate the full 30 tokens with no early EOS; per-checkpoint bigram diversity is 0.735 ($\alpha=0.5$) and 0.744 ($\alpha=1$), compared with 0.743 for recovered and 0.738 for clean-then-clean models. Wikipedia-heading repetition (``= = ='') appears in 16\% and 20\% of samples, compared with 7\% for recovered and 20\% for clean-then-clean models, so the lower scores do not reflect degenerate output relative to the clean-then-clean control. $\alpha$ was not tuned, and the direction is only toxicity-associated.
+
+\begin{table*}[t]
+\centering\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{Continuation-only toxicity} & \multicolumn{3}{c}{Test perplexity} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Dose & Recovered & $\alpha=0.5$ & $\alpha=1$ & Recovered & $\alpha=0.5$ & $\alpha=1$ \\
+\midrule
+\inputrows{tables_v27/negation.tex}
+\midrule
+Clean-then-clean & \multicolumn{3}{c}{$0.049\pm0.009$} & \multicolumn{3}{c}{$23.95\pm0.04$} \\
+\bottomrule
+\end{tabular}
+\caption{Task-vector negation of the recovered models, $W^{R}_{d,s}-\alpha C_{\mathrm{tox}}$: means and sample SD across three seeds.}
+\label{tab:negation}
+\end{table*}
+
+\section{Block-Level Geometry}
+\label{app:blockgeom}
+Figure~\ref{fig:geomctl} breaks the checkpoint geometry of Table~\ref{tab:geomctl} down by transformer block. Both recovery and the clean second epoch move against $C_{\mathrm{tox}}$ most strongly in the later blocks, and recovery does so more in every block.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures_v27/geometry_controls.pdf}
+\caption{Per-block checkpoint geometry. Left: cosine of the recovery displacement $R$ (solid, with sample SD across seeds) and of the matched clean second epoch $R_{\mathrm{cc}}$ (dashed) with the toxicity-associated displacement $C_{\mathrm{tox}}$. Right: cosine between $R$ and $R_{\mathrm{cc}}$.}
+\label{fig:geomctl}
+\end{figure*}
+
+The archived geometry script iterated over a state dictionary that includes both the token embedding and its tied language-model head, counting those weights twice; its global cosines (0.58--0.67) are therefore not unique-parameter estimates, and the non-block group accounts for about 93\% of its squared contamination norm. Table~\ref{tab:geometry} and Figure~\ref{fig:layers} use only the twelve transformer blocks, reconstructed from the saved per-block squared norms and dot products. The block cosines agree with the checkpoint recomputation in Table~\ref{tab:geomctl}.
+
+\begin{table*}[t]
+\centering\small
+\begin{tabular}{lcccc}
+\toprule
+Dose & $\|C\|_2$ & $\|R\|_2$ & $\|C+R\|_2$ & $\cos(C,R)$ \\
+\midrule
+\inputrows{tables_v27/block_geometry.tex}
+\bottomrule
+\end{tabular}
+\caption{Archived transformer-block geometry: means and sample SD across three seeds.}
+\label{tab:geometry}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures_v27/layer_geometry.pdf}
+\caption{Archived per-block geometry. Left: contamination--recovery cosine. Right: contamination displacement norm. Error bars are sample SD across three seeds. Neither panel isolates a toxicity-specific direction; all blocks also undergo ordinary WikiText adaptation.}
+\label{fig:layers}
+\end{figure*}
 
 \section{Per-Seed Results and Sensitivity}
 \label{app:sensitivity}
 Table~\ref{tab:perseed} gives every paired target and crossing interval. Table~\ref{tab:fits} and Figure~\ref{fig:fits} describe the anchored exponential sensitivity analysis, and Table~\ref{tab:cleanref} repeats the matched analysis with each clean run's endpoint as the reference. Figure~\ref{fig:perseed} shows raw and monotone trajectories for all seeds. \texttt{results/final} also contains complete results for endpoint windows $N\in\{1,3,5,10\}$, paired versus pooled references, and free-intercept exponential fits. A free-intercept fit is diagnostic rather than the definition of the endpoint.
 
-\par\medskip\noindent\begin{minipage}{\columnwidth}
+\begin{table}[t]
 \centering\small
 \begin{tabular}{lccc}
 \toprule
@@ -358,11 +410,11 @@ Dose & $\log(2)/k$ & $T_\infty$ & $R^2$ range \\
 \inputrows{tables_v27/fit_summary.tex}
 \bottomrule
 \end{tabular}
-\captionof{table}{Anchored per-seed exponential fits. Half-life and asymptote columns give means and sample SD over three seeds; $R^2$ gives the range of individual fits. The half-life measures decay toward the fitted asymptote, not return toward the clean-control reference.}
+\caption{Anchored per-seed exponential fits. Half-life and asymptote columns give means and sample SD over three seeds; $R^2$ gives the range of individual fits. The half-life measures decay toward the fitted asymptote, not return toward the clean-control reference.}
 \label{tab:fits}
-\end{minipage}\par\medskip
+\end{table}
 
-\par\medskip\noindent\begin{minipage}{\columnwidth}
+\begin{table}[t]
 \centering\small
 \begin{tabular}{lccc}
 \toprule
@@ -371,9 +423,9 @@ Dose & $\overline b\pm\mathrm{SD}$ & Isotonic & Exponential \\
 \inputrows{tables_v27/clean_reference_sensitivity.tex}
 \bottomrule
 \end{tabular}
-\captionof{table}{Matched analysis with $B_s$ replaced by each clean run's five-evaluation endpoint: mean lower bound and recovery crossings within the horizon (/3).}
+\caption{Matched analysis with $B_s$ replaced by each clean run's five-evaluation endpoint: mean lower bound and recovery crossings within the horizon (/3).}
 \label{tab:cleanref}
-\end{minipage}\par\medskip
+\end{table}
 
 \clearpage
 \begin{table*}[p]

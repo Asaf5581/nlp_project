@@ -35,6 +35,8 @@ pretrained GPT-2 ──► contamination (1 epoch, WikiText + d% hate tweets) �
 | `src/final_analysis.py` | **Main analysis**: matched-threshold crossings, sensitivity, exponential fits, block geometry. Writes `results/final/`, `paper/figures_v27/`, `paper/tables_v27/`. CPU only, seconds |
 | `src/supplementary_report_tables.py` | Builds the endpoint-evaluation table used in the paper |
 | `src/supplementary/` | Final-checkpoint re-evaluation: `independent_perplexity.py`, `continuation_toxicity.py`, their `analyze_*.py` scripts, and the checkpoint list `checkpoints.py` |
+| `src/supplementary/geometry_controls.py` | Checkpoint geometry over unique parameters: `cos(C,R)`, toxicity-associated direction `C_tox = W_d - W_0`, clean-then-clean comparison, cross-seed noise floor (`analyze_geometry_controls.py` for tables and figures) |
+| `src/supplementary/build_negated.py` | Task-vector negation of the recovered models, `W_R - alpha * C_tox` (`analyze_negation.py` for the summary) |
 | `scripts/` | Slurm submission scripts (TAU cluster, `studentkillable` partition) |
 | `scripts/supplementary/` | Slurm batch files for the final-checkpoint re-evaluation |
 | `notebooks/` | Original Colab notebooks (the project started on Colab) |
@@ -83,6 +85,18 @@ python src/supplementary/continuation_toxicity.py --index 0 --project-dir .
 
 On Slurm, use `sbatch --array=0-30 scripts/supplementary/{independent_perplexity,continuation_toxicity}.sbatch`.
 
+### 4. Controls on the final checkpoints (needs the trained checkpoints)
+
+```bash
+bash scripts/submit_clean_then_clean.sh                            # clean model + the same 2nd epoch as recovery, then its evaluations
+sbatch scripts/supplementary/geometry_controls.sbatch              # unique-parameter geometry and clean-then-clean comparison
+J=$(sbatch --parsable scripts/supplementary/build_negated.sbatch)  # W_R - alpha * C_tox, alpha in {0.5, 1}
+sbatch --dependency=afterok:$J --array=31-54 scripts/supplementary/independent_perplexity.sbatch
+sbatch --dependency=afterok:$J --array=31-54 scripts/supplementary/continuation_toxicity.sbatch
+```
+
+Afterwards, run `python src/supplementary/analyze_geometry_controls.py` and `python src/supplementary/analyze_negation.py` on the collected results.
+
 ## Key settings
 
 | Setting | Value |
@@ -96,5 +110,5 @@ On Slurm, use `sbatch --array=0-30 scripts/supplementary/{independent_perplexity
 
 ## What is not in this repository
 
-- **Model checkpoints.** There are 30 checkpoints of about 500 MB each, too large for GitHub. They are archived on the TAU cluster and available on request.
+- **Model checkpoints.** There are 30 trained checkpoints and 24 task-vector-edited ones, about 500 MB each, too large for GitHub. They are archived on the TAU cluster and available on request; the edited ones can be rebuilt with `src/supplementary/build_negated.py`.
 - **Datasets.** They are public on the Hugging Face Hub and are downloaded by the code.

@@ -184,6 +184,13 @@ def plots(root, metrics, traj, layer):
             mean,sd=g.mean(),g.std(ddof=1)
             ax.plot(mean.index,mean,color=color,label=f'{dose:.0%}',lw=1.4)
             ax.fill_between(mean.index,mean-sd,mean+sd,color=color,alpha=.12,lw=0)
+        # Clean-then-clean control (second clean epoch from the d=0 model), once all three runs are complete.
+        ctc=[root/'results'/'recovery_logs'/f'dose_0.0_seed_{s}.csv' for s in range(3)]
+        if phase=='recovery' and all(p.exists() for p in ctc):
+            runs=[pd.read_csv(p).set_index('step').toxicity for p in ctc]
+            if all(r.index.max()>=5900 for r in runs):
+                m=pd.concat(runs,axis=1).mean(axis=1)
+                ax.plot(m.index,m,color='.35',lw=1.4,label='Clean, 2nd epoch')
         ax.set(xlabel='Optimizer steps',ylabel='Mean toxicity score',title=phase.capitalize(),ylim=(.07,.55))
         ax.legend(ncol=2,frameon=False)
     savefig(fig,root,'phase_trajectories')
@@ -235,7 +242,7 @@ def plots(root, metrics, traj, layer):
     boxes=[(.01,.48,.21,.19,'Pretrained GPT-2\n124M parameters'),
            (.31,.69,.29,.21,'Contamination: 1 epoch\nWikiText + hate tweets\n4 doses, 3 data seeds'),
            (.69,.69,.29,.21,'Recovery: 1 epoch\nWikiText only\n12 matched endpoints'),
-           (.31,.37,.29,.19,'Clean control: 1 epoch\nWikiText only\n3 data seeds'),
+           (.30,.37,.31,.19,'Clean control: 1+1 epochs\nWikiText only\n3 data seeds'),
            (.17,.02,.81,.22,'Evaluation\nTraining logs: 100 prompts, every 50 steps\nEndpoint reports: continuation toxicity + test perplexity')]
     from matplotlib.patches import FancyBboxPatch
     for x,y,w,h,label in boxes:

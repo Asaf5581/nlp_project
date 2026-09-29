@@ -29,7 +29,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 RES = os.path.join(ROOT, 'results', 'supplementary', 'continuation_toxicity')
 PLOTS = os.path.join(ROOT, 'results', 'plots', 'supplementary')
 METRICS = {'tox_cont': 'Continuation-only (B)', 'tox_full': 'Prompt + continuation (A)'}
-COLORS = {'clean': '.35', 'contaminated': '#b95438', 'recovered': '#247ba0', 'pretrained': '#99539b'}
+COLORS = {'clean': '.35', 'contaminated': '#b95438', 'recovered': '#247ba0', 'pretrained': '#99539b',
+          'clean_then_clean': '#28875a'}
+PAIRED = ['contaminated', 'recovered']
 LABELS = {'contaminated': 'After contamination', 'recovered': 'After recovery'}
 N_BOOT = 2000
 
@@ -75,7 +77,9 @@ def main():
     # --- matched-seed contrasts (training-seed level)
     rows = []
     clean = trained[trained.condition == 'clean'].set_index('train_seed')
-    for (dose, seed), g in trained[trained.condition != 'clean'].groupby(['dose', 'train_seed']):
+    # matched control for the extra epoch: clean model + the same second WikiText epoch
+    ctc = trained[trained.condition == 'clean_then_clean'].set_index('train_seed')
+    for (dose, seed), g in trained[trained.condition.isin(PAIRED)].groupby(['dose', 'train_seed']):
         g = g.set_index('condition')
         for m in METRICS:
             c, r, b = g.loc['contaminated', m], g.loc['recovered', m], clean.loc[seed, m]
@@ -83,7 +87,10 @@ def main():
                          'recovered': r, 'abs_change_C_minus_R': c - r,
                          'rel_reduction_vs_contaminated': (c - r) / c,
                          'excess_removed_frac': (c - r) / (c - b) if c != b else np.nan,
-                         'residual_R_minus_clean': r - b, 'excess_C_minus_clean': c - b})
+                         'residual_R_minus_clean': r - b, 'excess_C_minus_clean': c - b,
+                         'clean_then_clean': ctc.loc[seed, m] if seed in ctc.index else np.nan,
+                         'residual_R_minus_clean_then_clean':
+                             r - ctc.loc[seed, m] if seed in ctc.index else np.nan})
     paired = pd.DataFrame(rows)
     paired.to_csv(os.path.join(RES, 'paired_by_seed.csv'), index=False)
     by_dose = paired.groupby(['metric', 'dose']).agg(['mean', 'std']).drop(columns='train_seed')
@@ -93,7 +100,7 @@ def main():
     # --- sampling-level contrast: bootstrap over prompts of (C - R) within each dose x seed pair
     pmc = prompt_means(df, 'tox_cont')
     samp = []
-    for (dose, seed), g in trained[trained.condition != 'clean'].groupby(['dose', 'train_seed']):
+    for (dose, seed), g in trained[trained.condition.isin(PAIRED)].groupby(['dose', 'train_seed']):
         ids = g.set_index('condition')['ckpt_id']
         diff = (pmc.loc[ids['contaminated']] - pmc.loc[ids['recovered']]).values[None, :]
         lo, hi = boot_ci(diff, rng)
@@ -132,27 +139,33 @@ def figure_a(summ, trained):
     for cond, mark in [('contaminated', 'o'), ('recovered', 's')]:
         g = summ[summ.condition == cond].set_index('dose').loc[doses]
         ax.errorbar(range(len(doses)), g.tox_cont_mean, yerr=g.tox_cont_std, color=COLORS[cond],
-                    marker=mark, capsize=3, label=LABELS[cond])
+                    marker=mark, capsize=3, label={'contaminated': 'Contaminated', 'recovered': 'Recovered'}[cond])
     ax.axhline(trained[trained.condition == 'clean'].tox_cont.mean(), color=COLORS['clean'], ls='--',
                label='Clean control')
+    ctc = trained[trained.condition == 'clean_then_clean']
+    if len(ctc):
+        ax.axhline(ctc.tox_cont.mean(), color=COLORS['clean_then_clean'], ls=':', label='Clean, 2nd epoch')
     ax.set(xticks=range(len(doses)), xticklabels=[f'{d:.0%}' for d in doses], xlabel='Dose (sequences)',
            ylabel='Continuation toxicity', ylim=(0, .45))
-    ax.legend(loc='upper center', bbox_to_anchor=(.5, 1.39), frameon=False, fontsize=9)
+    ax.legend(loc='upper center', bbox_to_anchor=(.5, 1.36), frameon=False, fontsize=9, ncol=2,
+              columnspacing=1.0, handlelength=1.6)
     savefig(fig, 'continuation_toxicity_by_dose')
 
 
 def figure_b(per):
     """Combined-text (A) vs continuation-only (B) score of the same samples, per checkpoint."""
     fig, ax = plt.subplots(figsize=(3.35, 2.35), layout='constrained')
-    for k, cond in enumerate(['clean', 'contaminated', 'recovered']):
+    names = {'clean': 'Clean', 'clean_then_clean': 'Clean x2', 'contaminated': 'Contam.', 'recovered': 'Recov.'}
+    conds = [c for c in ['clean', 'clean_then_clean', 'contaminated', 'recovered'] if c in set(per.condition)]
+    for k, cond in enumerate(conds):
         g = per[per.condition == cond]
         x0, x1 = 3 * k, 3 * k + 1
         for _, r in g.iterrows():
             ax.plot([x0, x1], [r.tox_full, r.tox_cont], color=COLORS[cond], alpha=.25, lw=.8)
         ax.plot([x0, x1], [g.tox_full.mean(), g.tox_cont.mean()], color=COLORS[cond], lw=2, marker='o')
-    ax.set(xticks=[3 * k + j for k in range(3) for j in (0, 1)], xlim=(-.6, 7.6), ylim=(0, .45),
-           xticklabels=['A', 'B'] * 3, ylabel='Mean toxicity score')
-    ax.set_xlabel('Clean          Contaminated          Recovered', fontsize=9)
+        ax.text(x0 + .5, -.2, names[cond], ha='center', va='top', transform=ax.get_xaxis_transform(), fontsize=9)
+    ax.set(xticks=[3 * k + j for k in range(len(conds)) for j in (0, 1)], xlim=(-.6, 3 * len(conds) - 1.4),
+           ylim=(0, .45), xticklabels=['A', 'B'] * len(conds), ylabel='Mean toxicity score')
     savefig(fig, 'combined_vs_continuation_toxicity')
 
 

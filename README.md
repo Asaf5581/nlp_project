@@ -5,7 +5,7 @@ Hodaya Menashe, Asaf Denish, Iakov Odesser.
 
 > **Content warning.** `results/supplementary/continuation_toxicity/` contains raw model generations and tweet prompts. Many generations from contaminated models include slurs and hate speech. They are included only so that every number in the paper can be reproduced.
 
-**Paper:** [`paper/main_v27.pdf`](paper/main_v27.pdf) (LaTeX source in `paper/`).
+**Paper:** [`paper/main_v27.pdf`](paper/main_v27.pdf) (LaTeX source in paper/v27.3/).`n**Release:** This repository is perfectly reproducible at the fixed release tag `v27.3`..
 
 ## What the project does
 

@@ -4,6 +4,8 @@ The project repository is \href{https://github.com/Asaf5581/nlp_project}{github.
 
 Training uses \texttt{run\_experiment.py} with \texttt{src/data.py}, \texttt{src/train.py}, and \texttt{src/eval.py}; Slurm submission scripts are in \texttt{scripts/}. From the project root,
 \begin{quote}\small\ttfamily
+python src/final\_analysis.py
+\end{quote}
 rebuilds the matched-threshold and sensitivity outputs from logged trajectory CSVs without checkpoints. Raw continuation-toxicity and perplexity results are stored under \texttt{results/supplementary/}. The analysis environment used for this revision is Python 3.14, NumPy 2.5, pandas 3.0, SciPy 1.18, and Matplotlib 3.11.
 
 The release includes the checkpoint-dependent code in \path{src/supplementary/}: \path{geometry_controls.py} with \path{analyze_geometry_controls.py}, and \path{build_negated.py} with \path{analyze_negation.py}. Raw clean-then-clean endpoint files are under the continuation-toxicity and independent-perplexity \path{per_checkpoint/} directories; stepwise clean-then-clean logs are under \path{results/recovery_logs/}; geometry-recomputation and negation outputs are under \path{results/supplementary/geometry_controls/} and \path{results/supplementary/negation/}. The README gives the corresponding analysis and Slurm commands. Trained checkpoints are excluded from GitHub because of their size; the README states that the 30 trained and 24 edited checkpoints are archived on the TAU cluster and available from the authors on request, and that edited checkpoints can be rebuilt with \path{build_negated.py}.
